@@ -1,9 +1,85 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
+from tkinter import filedialog
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import math
 
-# Settings
+# Calculate images
+
+def calc_images(d0, phi0, theta0, lWall, rWall, fWall, bWall, cWall, oWall, maxOrder, maxtime, v_sound):
+    # d0 = 2       # meter bort
+    # phi0 = 30    # grader
+    # theta0 = 0   # grader
+    # lWall = 3    # left wall, meter bort
+    # rWall = 4    # right wall, meter bort
+    # fWall = 3.5  # front wall, meter bort
+    # bWall = 4.5  # back wall, meter bort
+    # cWall = 2    # ceiling, meter bort
+    # oWall = 1.5  # floor, meter bort
+    # maxOrder = 3 # Maximum reflex order
+    # maxtime = 1  # Maximum time of IR
+    # v_sound = 340
+
+    dmax = d0
+
+    # https://www.sofaconventions.org/mediawiki/index.php/File:Coordinate_system.png
+    # https://docs.python.org/3/library/math.html
+
+    xPos0 = d0 * math.cos(phi0 / 180 * math.pi) * math.cos(theta0 / 180 * math.pi)
+    yPos0 = d0 * math.sin(phi0 / 180 * math.pi) * math.cos(theta0 / 180 * math.pi)
+    zPos0 = d0 * math.sin(theta0 / 180 * math.pi)
+
+    images = []
+    images.append([0, 0, 0, xPos0, yPos0, zPos0, d0, phi0, theta0, 
+                0, 0, 0, 0, 0, 0])
+
+    for xStep in range(-maxOrder, maxOrder+1):
+        for yStep in range(-maxOrder, maxOrder+1):
+            for zStep in range(-maxOrder, maxOrder+1):
+                if ((abs(xStep) + abs(yStep) + abs(zStep)) <= maxOrder) and (xStep != 0 or yStep != 0 or zStep !=0):
+                    # print(str(xStep) + " " + str(yStep) + " " + str(zStep))
+                    
+                    # 2*(fWall-xPos0) när xStep är 1, 3, 5, ... och -2, -4, -6, ...
+                    # 2*(xPos0+bWall) när xStep är 2, 4, 6, ... och -1, -3, -5, ...
+                    if (xStep > 0):
+                        xPos = xPos0 + (math.floor(xStep/2) * 2*(xPos0+bWall) + math.floor((xStep+1)/2) * 2*(fWall-xPos0))
+                    else:
+                        xPos = xPos0 - (math.floor(-xStep/2) * 2*(fWall-xPos0) + math.floor((-xStep+1)/2) * 2*(xPos0+bWall))
+                    
+                    # 2*(lWall-yPos0) när yStep är 1, 3, 5, ... och -2, -4, -6, ...
+                    # 2*(yPos0+rWall) när yStep är 2, 4, 6, ... och -1, -3, -5, ...
+                    if (yStep > 0):
+                        yPos = yPos0 + (math.floor(yStep/2) * 2*(yPos0+rWall) + math.floor((yStep+1)/2) * 2*(lWall-yPos0))
+                    else:
+                        yPos = yPos0 - (math.floor(-yStep/2) * 2*(lWall-yPos0) + math.floor((-yStep+1)/2) * 2*(yPos0+rWall))
+                    
+                    # 2*(cWall-zPos0) när xStep är 1, 3, 5, ... och -2, -4, -6, ...
+                    # 2*(zPos0+oWall) när xStep är 2, 4, 6, ... och -1, -3, -5, ...
+                    if (zStep > 0):
+                        zPos = zPos0 + (math.floor(zStep/2) * 2*(zPos0+oWall) + math.floor((zStep+1)/2) * 2*(cWall-zPos0))
+                    else:
+                        zPos = zPos0 - (math.floor(-zStep/2) * 2*(cWall-zPos0) + math.floor((-zStep+1)/2) * 2*(zPos0+oWall))
+                    
+                    d = math.sqrt(xPos**2 + yPos**2 + zPos**2)
+                    if d < (maxtime * v_sound):
+                        if d > dmax:
+                            dmax = d
+                        phi = math.atan2(yPos, xPos) / math.pi * 180
+                        theta = math.atan2(zPos, math.sqrt(xPos**2 + yPos**2)) / math.pi * 180
+                        lWallRefl = math.floor((yStep+1)/2) if (yStep > 0) else math.floor(-yStep/2) # yStep=1,3,5,.. eller -2,-4,-6,..
+                        rWallRefl = math.floor((-yStep+1)/2) if (yStep < 0) else math.floor(yStep/2) # yStep=2,4,6,.. eller -1,-3,-5,..
+                        fWallRefl = math.floor((xStep+1)/2) if (xStep > 0) else math.floor(-xStep/2)
+                        bWallRefl = math.floor((-xStep+1)/2) if (xStep < 0) else math.floor(xStep/2)
+                        cWallRefl = math.floor((zStep+1)/2) if (zStep > 0) else math.floor(-zStep/2)
+                        oWallRefl = math.floor((-zStep+1)/2) if (zStep < 0) else math.floor(zStep/2)
+
+                        images.append([xStep, yStep, zStep, xPos, yPos, zPos, d, phi, theta, 
+                                       lWallRefl, rWallRefl, fWallRefl, bWallRefl, cWallRefl, oWallRefl])
+    return (images, dmax)
+
+# GUI settings
 
 font_normal = ("Arial", 10)
 font_bold = ("Arial", 10, "bold")
@@ -376,13 +452,39 @@ canvas.get_tk_widget().grid()
 # Buttons
 
 def IR_calc():
-   pass
+    images, dmax = calc_images(
+        float(spinbox_src_d0.get()), 
+        float(spinbox_src_phi0.get()), 
+        float(spinbox_src_theta0.get()), 
+        float(spinbox_walls_d[0].get()), # lWall
+        float(spinbox_walls_d[1].get()), # rWall
+        float(spinbox_walls_d[2].get()), # fWall, 
+        float(spinbox_walls_d[3].get()), # bWall
+        float(spinbox_walls_d[4].get()), # cWall
+        float(spinbox_walls_d[5].get()), # oWall
+        int(spinbox_IR_o.get()), # maxOrder
+        float(spinbox_IR_t.get()), # maxtime
+        float(spinbox_air_v.get()) )
+
+    # 2 do!!
 
 def IR_save():
    pass
 
 def audio_load():
-   pass
+    filetypes = (
+        ('Wav files', '*.wav'),
+        ('All files', '*.*')
+    )
+    filename = filedialog.askopenfilename(
+        title='Open a file',
+        initialdir='/',
+        filetypes=filetypes)
+    if filename != "":
+        messagebox.showinfo(
+            title='Selected File',
+            message=filename
+        )
 
 def audio_listen():
    pass
