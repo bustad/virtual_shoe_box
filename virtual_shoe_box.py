@@ -5,6 +5,7 @@ from tkinter import filedialog
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import math
+import pandas as pd
 
 # Calculate images
 
@@ -452,6 +453,7 @@ canvas.get_tk_widget().grid()
 # Buttons
 
 def IR_calc():
+    # Calc images
     images, dmax = calc_images(
         float(spinbox_src_d0.get()), 
         float(spinbox_src_phi0.get()), 
@@ -465,6 +467,12 @@ def IR_calc():
         int(spinbox_IR_o.get()), # maxOrder
         float(spinbox_IR_t.get()), # maxtime
         float(spinbox_air_v.get()) )
+
+    # Print images
+    df1 = pd.DataFrame(images, columns=["xStep", "yStep", "zStep", "xPos", "yPos", "zPos", "d", "phi", "theta", 
+                                        "lWallRefl", "rWallRefl", "fWallRefl", "bWallRefl", "cWallRefl", "oWallRefl"])
+    text_images.delete(1.0, tk.END)
+    text_images.insert(tk.END, df1.to_string())
 
     # 2 do!!
 
@@ -500,6 +508,9 @@ button_audio_load.grid(column=4, row=11, columnspan=2, sticky = "ew", pady = 5, 
 
 button_audio_listen = tk.Button(text ="Listen to ...", command = audio_listen)
 button_audio_listen.grid(column=6, row=11, columnspan=3, sticky = "ew", pady = 5, padx = 5)
+
+text_images = tk.Text(root, width=142, height=10, font=("Courier New", 8))
+text_images.grid(column=0, row=12, columnspan=9)
 
 # Main loop
 root.mainloop()
