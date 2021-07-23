@@ -260,6 +260,26 @@ def calc_IR(images, dmax, d0, v_sound, airabson):
 
     return (ir_left, ir_right)
 
+# Plot IR
+
+def plotIRandEQ():
+    th = 0.00001
+    for k in range(ir_left.shape[0]):
+        if abs(ir_left[-(k+1)]) > th or abs(ir_right[-(k+1)]) > th:
+            irlen = ir_left.shape[0] - k
+            break
+        
+    ax1.clear()
+    t = np.arange(irlen) / fs
+    ax1.plot(t, ir_left[0:irlen], linewidth=1)
+    ax1.plot(t, ir_right[0:irlen], linewidth=1)
+    ax1.grid()
+    
+    ax2.clear()
+    #ax2.plot(ir_right)
+
+    canvas.draw()
+
 # GUI settings
 
 font_normal = ("Arial", 10)
@@ -616,16 +636,9 @@ spinbox_IR_t.grid(column=4, row=9, sticky = "new", pady = 5, padx = 5)
 
 plotFrame = tk.Frame(root)
 plotFrame.grid(column=0, row=10, columnspan=9, sticky = "ew", pady = 5, padx = 5)
-f = Figure(figsize=(9, 2), dpi=100)
-
-ax = f.add_subplot(121)
-ax.set_xlim([-0.2, 1.2])
-ax.set_ylim([-0.2, 1.2])
-
-ax = f.add_subplot(122)
-ax.set_xlim([-0.2, 1.2])
-ax.set_ylim([-0.2, 1.2])
-
+f = Figure(figsize=(10.25, 2), dpi=100)
+ax1 = f.add_subplot(121)
+ax2 = f.add_subplot(122)
 canvas = FigureCanvasTkAgg(f, master=plotFrame)
 canvas.draw()
 canvas.get_tk_widget().grid()
@@ -655,6 +668,9 @@ def IR_calc():
     text_images.insert(tk.END, df1.to_string())
     text_images.insert(tk.END, "\n\ndmax = " + str(dmax))
 
+    # Calc IR
+    global ir_left
+    global ir_right
     ir_left, ir_right = calc_IR(
         images, 
         dmax, 
@@ -662,6 +678,9 @@ def IR_calc():
         float(spinbox_air_v.get()),
         spinbox_air_abs.get() == "On"
         )
+
+    # Display IR
+    plotIRandEQ()
 
     # 2 do!!
 
@@ -714,6 +733,13 @@ fs = float(sofa.getSamplingRate())
 
 KU100_CDFC = scipy.io.loadmat('KU100_CDFC.mat')
 CDFC = KU100_CDFC['hpcf'][0][0][0].flatten()
+
+# Starting IR
+ir_left = np.zeros(256)
+ir_left[0] = 1
+ir_right = np.zeros(256)
+ir_right[0] = 1
+plotIRandEQ()
 
 # Main loop
 root.mainloop()
