@@ -2,10 +2,18 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
+from tkinter import scrolledtext
+from tkinter.constants import HORIZONTAL
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import math
+import cmath
 import pandas as pd
+from pysofaconventions import *
+import scipy.io
+from scipy.fft import fft, ifft
+from scipy import signal
+import numpy as np
 
 # Calculate images
 
@@ -80,6 +88,178 @@ def calc_images(d0, phi0, theta0, lWall, rWall, fWall, bWall, cWall, oWall, maxO
                                        lWallRefl, rWallRefl, fWallRefl, bWallRefl, cWallRefl, oWallRefl])
     return (images, dmax)
 
+# Calculate IR
+
+def findClosestAngle(p, t, sourcePositions):
+    x = math.cos(p / 180.0 * math.pi) * math.cos(t / 180.0 * math.pi)
+    y = math.sin(p / 180.0 * math.pi) * math.cos(t / 180.0 * math.pi)
+    z = math.sin(t / 180.0 * math.pi)
+    
+    d2m = 3
+    mClosest = 0
+    for k in range(sourcePositions.shape[0]):
+        pk = sourcePositions[k][0] # Phi/azimuth
+        tk = sourcePositions[k][1] # Theta/elevation 
+        
+        xk = math.cos(pk / 180.0 * math.pi) * math.cos(tk / 180.0 * math.pi)
+        yk = math.sin(pk / 180.0 * math.pi) * math.cos(tk / 180.0 * math.pi)
+        zk = math.sin(tk / 180.0 * math.pi)
+        
+        d2k = (x-xk) ** 2 + (y-yk) ** 2 + (z-zk) ** 2
+        if d2k < d2m:
+            d2m = d2k
+            mClosest = k
+        
+    return mClosest
+
+def aabs(f, d):
+    T0 = 293.15 # K
+    T = T0      # K
+    
+    h = 0.60
+    
+    Fro = 24 + 4.04e4*h*(0.02+h)/(0.391+h)
+    Frn = pow(T/T0, -1/2) * (
+        9 + 
+        280*h*math.exp(-4.17*(pow(T/T0, -1/3)-1))
+    )
+    
+    alpha = 869 * f**2 * (
+        1.84e-11 * pow(T/T0, 1/2) + 
+        pow(T/T0, -5/2)*(
+            0.01275*math.exp(-2239.1/T)/(Fro+f**2/Fro) +
+            0.1068*math.exp(-3352/T)/(Frn+f**2/Frn)
+        ) 
+    )
+    
+    return -alpha * d / 100  # dB
+
+def airabsir(d, sz, fs):
+    airabsfr = np.zeros(sz)
+    for k in range(int(sz/2)+1):
+        airabsfr[k] = pow(10, aabs(k/sz*fs, d) / 20.0)
+    for k in range(int(sz/2)-1):
+        airabsfr[sz-1-k] = airabsfr[k+1]
+    airabsir = np.real(ifft(airabsfr))
+    airabsir = np.concatenate((airabsir[int(sz/2):sz], airabsir[0:int(sz/2)]))
+    return airabsir
+
+def reflexfilter(x, gain, f_hi, g_hi, Q_hi, f_lo, g_lo, Q_lo):
+    y = np.concatenate((x, np.zeros(200)))
+    
+    gainl = g_lo # dB
+    gainh = g_hi # dB
+    f0l = f_lo # Hz
+    f0h = f_hi # Hz
+    Ql = Q_lo
+    Qh = Q_hi
+
+    Al = pow(10, gainl/40)
+    Ah = pow(10, gainh/40)
+    w0l = 2*cmath.pi*f0l/fs
+    w0h = 2*cmath.pi*f0h/fs
+    alphal = cmath.sin(w0l) / (2*Ql)
+    alphah = cmath.sin(w0h) / (2*Qh)
+    
+    # Low shelf
+    b0l = Al*((Al+1)-(Al-1)*cmath.cos(w0l)+2*cmath.sqrt(Al)*alphal)
+    b1l = 2*Al*((Al-1)-(Al+1)*cmath.cos(w0l))
+    b2l = Al*((Al+1)-(Al-1)*cmath.cos(w0l)-2*cmath.sqrt(Al)*alphal)
+    a0l = (Al+1)+(Al-1)*cmath.cos(w0l)+2*cmath.sqrt(Al)*alphal
+    a1l = -2*( (Al-1)+(Al+1)*cmath.cos(w0l) )
+    a2l = (Al+1)+(Al-1)*cmath.cos(w0l)-2*cmath.sqrt(Al)*alphal
+
+    # High shelf
+    b0h = Ah*( (Ah+1)+(Ah-1)*cmath.cos(w0h)+2*cmath.sqrt(Ah)*alphah )
+    b1h = -2*Ah*( (Ah-1)+(Ah+1)*cmath.cos(w0h) )
+    b2h = Ah*( (Ah+1)+(Ah-1)*cmath.cos(w0h)-2*cmath.sqrt(Ah)*alphah )
+    a0h = (Ah+1)-(Ah-1)*cmath.cos(w0h)+2*cmath.sqrt(Ah)*alphah
+    a1h = 2*((Ah-1)-(Ah+1)*cmath.cos(w0h))
+    a2h = (Ah+1)-(Ah-1)*cmath.cos(w0h)-2*cmath.sqrt(Ah)*alphah
+    
+    b = np.array([b0l, b1l, b2l])
+    a = np.array([a0l, a1l, a2l])
+    y = signal.lfilter(b, a, y)
+    
+    b = np.array([b0h, b1h, b2h])
+    a = np.array([a0h, a1h, a2h])
+    y = signal.lfilter(b, a, y)
+    
+    y = y * gain
+        
+    return y
+
+def calc_IR(images, dmax, d0, v_sound, airabson):
+    # sourcePositions, hrtfs (was data), CDFC, fs
+
+    ir_len = math.ceil((dmax - d0) / v_sound * fs + 4800) # Extra time for the different filters.
+    ir_left = np.zeros(ir_len)
+    ir_right = np.zeros(ir_len)
+
+    idx = 1
+    for img in images:
+        idx += 1
+        p = img[7]
+        t = img[8]
+        m = findClosestAngle(p, t, sourcePositions)
+        hrtf = hrtfs[m,:,:]
+        
+        #text_images.insert(tk.END, "\n\n" + str(type( fs )))
+        delay = round( (float(img[6])-d0) / v_sound * fs )
+        amp = d0 / img[6]
+
+        hrtf0 = hrtf[0]
+        hrtf1 = hrtf[1]
+        
+        if airabson:
+            air = airabsir(img[6], 256, 48000)
+            hrtf0 = scipy.signal.fftconvolve(hrtf0, air)
+            hrtf1 = scipy.signal.fftconvolve(hrtf1, air)
+        
+        for k in range(img[9]):
+            # lWallRefl
+            hrtf0 = reflexfilter(hrtf0, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            hrtf1 = reflexfilter(hrtf1, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            
+        for k in range(img[10]):
+            # rWallRefl
+            hrtf0 = reflexfilter(hrtf0, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            hrtf1 = reflexfilter(hrtf1, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            
+        for k in range(img[11]):
+            # fWallRefl
+            hrtf0 = reflexfilter(hrtf0, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            hrtf1 = reflexfilter(hrtf1, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            
+        for k in range(img[12]):
+            # bWallRefl
+            hrtf0 = reflexfilter(hrtf0, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            hrtf1 = reflexfilter(hrtf1, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            
+        for k in range(img[13]):
+            # cWallRefl
+            hrtf0 = reflexfilter(hrtf0, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            hrtf1 = reflexfilter(hrtf1, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            
+        for k in range(img[14]):
+            # oWallRefl
+            hrtf0 = reflexfilter(hrtf0, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            hrtf1 = reflexfilter(hrtf1, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+        
+        ir_left[delay:(delay+hrtf0.shape[0])]  = ir_left[delay:(delay+hrtf0.shape[0])]  + hrtf0 * amp
+        ir_right[delay:(delay+hrtf1.shape[0])] = ir_right[delay:(delay+hrtf1.shape[0])] + hrtf1 * amp
+
+        pb['value'] = int(idx / len(images) * 100)
+        root.update_idletasks()
+
+    ir_left = scipy.signal.fftconvolve(ir_left, CDFC)
+    ir_right = scipy.signal.fftconvolve(ir_right, CDFC)
+
+    pb['value'] = 0
+    root.update_idletasks()
+
+    return (ir_left, ir_right)
+
 # GUI settings
 
 font_normal = ("Arial", 10)
@@ -97,7 +277,7 @@ root.title('Virtual Shoe Box')
 
 for k in range(9):
     root.columnconfigure(k, weight=1)
-for k in range(11):
+for k in range(14):
     root.rowconfigure(k, weight=1)
 
 # Source
@@ -468,11 +648,20 @@ def IR_calc():
         float(spinbox_IR_t.get()), # maxtime
         float(spinbox_air_v.get()) )
 
-    # Print images
+    # Display images
     df1 = pd.DataFrame(images, columns=["xStep", "yStep", "zStep", "xPos", "yPos", "zPos", "d", "phi", "theta", 
                                         "lWallRefl", "rWallRefl", "fWallRefl", "bWallRefl", "cWallRefl", "oWallRefl"])
     text_images.delete(1.0, tk.END)
     text_images.insert(tk.END, df1.to_string())
+    text_images.insert(tk.END, "\n\ndmax = " + str(dmax))
+
+    ir_left, ir_right = calc_IR(
+        images, 
+        dmax, 
+        float(spinbox_src_d0.get()),
+        float(spinbox_air_v.get()),
+        spinbox_air_abs.get() == "On"
+        )
 
     # 2 do!!
 
@@ -509,8 +698,22 @@ button_audio_load.grid(column=4, row=11, columnspan=2, sticky = "ew", pady = 5, 
 button_audio_listen = tk.Button(text ="Listen to ...", command = audio_listen)
 button_audio_listen.grid(column=6, row=11, columnspan=3, sticky = "ew", pady = 5, padx = 5)
 
-text_images = tk.Text(root, width=142, height=10, font=("Courier New", 8))
+text_images = scrolledtext.ScrolledText(root, width=145, height=10, font=("Courier New", 8))
 text_images.grid(column=0, row=12, columnspan=9)
+
+pb = ttk.Progressbar(root, orient = HORIZONTAL, mode = 'determinate', length = 1025)
+pb.grid(column=0, row=13, columnspan=9)
+pb['value'] = 0
+
+# Loading data: sourcePositions, hrtfs, CDFC
+path = "HRIR_FULL2DEG.sofa"
+sofa = SOFAFile(path,'r')
+sourcePositions = sofa.getVariableValue('SourcePosition')
+hrtfs = sofa.getDataIR()
+fs = float(sofa.getSamplingRate())
+
+KU100_CDFC = scipy.io.loadmat('KU100_CDFC.mat')
+CDFC = KU100_CDFC['hpcf'][0][0][0].flatten()
 
 # Main loop
 root.mainloop()
