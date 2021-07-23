@@ -14,6 +14,8 @@ import scipy.io
 from scipy.fft import fft, ifft
 from scipy import signal
 import numpy as np
+import soundfile as sf
+import sounddevice as sd
 
 # Calculate images
 
@@ -688,6 +690,8 @@ def IR_save():
    pass
 
 def audio_load():
+    global audio_data
+
     filetypes = (
         ('Wav files', '*.wav'),
         ('All files', '*.*')
@@ -697,13 +701,16 @@ def audio_load():
         initialdir='/',
         filetypes=filetypes)
     if filename != "":
-        messagebox.showinfo(
-            title='Selected File',
-            message=filename
-        )
+        audio_data, samplerate = sf.read(filename)
+        if audio_data.shape[1] > 1:
+            audio_data = audio_data[:,1]
 
 def audio_listen():
-   pass
+    binaural_left = scipy.signal.fftconvolve(audio_data, ir_left)
+    binaural_right = scipy.signal.fftconvolve(audio_data, ir_right)
+    binaural = np.asarray([binaural_left, binaural_right]).swapaxes(-1,0)
+
+    sd.play(binaural, fs)
 
 button_IR_calc = tk.Button(text ="Calculate IR", command = IR_calc)
 button_IR_calc.grid(column=0, row=11, columnspan=2, sticky = "ew", pady = 5, padx = 5)
@@ -740,6 +747,9 @@ ir_left[0] = 1
 ir_right = np.zeros(256)
 ir_right[0] = 1
 plotIRandEQ()
+
+# Audio data
+audio_data = np.zeros(0)
 
 # Main loop
 root.mainloop()
