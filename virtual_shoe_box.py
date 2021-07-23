@@ -855,7 +855,7 @@ def IR_save():
         title='Save IR',
         initialdir='/',
         filetypes=filetypes)
-    sf.write(filename, irlr, fs)
+    sf.write(filename, irlr, int(fs))
 
 def audio_load():
     global audio_data
