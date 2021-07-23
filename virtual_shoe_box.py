@@ -846,7 +846,16 @@ def IR_calc():
     # 2 do!!
 
 def IR_save():
-   pass
+    irlr = np.asarray([ir_left, ir_right]).swapaxes(-1,0)
+    filetypes = (
+        ('Wav files', '*.wav'),
+        ('All files', '*.*')
+    )
+    filename = filedialog.asksaveasfilename(
+        title='Save IR',
+        initialdir='/',
+        filetypes=filetypes)
+    sf.write(filename, irlr, fs)
 
 def audio_load():
     global audio_data
