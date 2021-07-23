@@ -857,6 +857,24 @@ def IR_save():
         filetypes=filetypes)
     sf.write(filename, irlr, int(fs))
 
+def audio_save():
+    binaural_left = scipy.signal.fftconvolve(audio_data, ir_left)
+    binaural_right = scipy.signal.fftconvolve(audio_data, ir_right)
+    binaural = np.asarray([binaural_left, binaural_right]).swapaxes(-1,0)
+
+    if binaural.max() > 1.0:
+        binaural = binaural / binaural.max()
+
+    filetypes = (
+        ('Wav files', '*.wav'),
+        ('All files', '*.*')
+    )
+    filename = filedialog.asksaveasfilename(
+        title='Save audio file',
+        initialdir='/',
+        filetypes=filetypes)
+    sf.write(filename, binaural, int(fs))
+
 def audio_load():
     global audio_data
 
@@ -872,7 +890,7 @@ def audio_load():
         audio_data, samplerate = sf.read(filename)
         if audio_data.shape[1] > 1:
             audio_data = audio_data[:,1]
-        button_audio_listen["text"] = "Listen to " + filename
+        # button_audio_listen["text"] = "Listen to " + filename
 
 def audio_listen():
     binaural_left = scipy.signal.fftconvolve(audio_data, ir_left)
@@ -885,16 +903,19 @@ def audio_listen():
     sd.play(binaural, fs)
 
 button_IR_calc = tk.Button(text ="Calculate IR", command = IR_calc)
-button_IR_calc.grid(column=0, row=11, columnspan=2, sticky = "ew", pady = 5, padx = 5)
+button_IR_calc.grid(column=0, row=11, columnspan=1, sticky = "ew", pady = 5, padx = 5)
 
 button_IR_save = tk.Button(text ="Save IR", command = IR_save)
-button_IR_save.grid(column=2, row=11, columnspan=2, sticky = "ew", pady = 5, padx = 5)
+button_IR_save.grid(column=1, row=11, columnspan=1, sticky = "ew", pady = 5, padx = 5)
 
 button_audio_load = tk.Button(text ="Load audio file", command = audio_load)
-button_audio_load.grid(column=4, row=11, columnspan=2, sticky = "ew", pady = 5, padx = 5)
+button_audio_load.grid(column=2, row=11, columnspan=1, sticky = "ew", pady = 5, padx = 5)
 
-button_audio_listen = tk.Button(text ="Listen to ...", command = audio_listen)
-button_audio_listen.grid(column=6, row=11, columnspan=3, sticky = "ew", pady = 5, padx = 5)
+button_audio_save = tk.Button(text ="Save audio file", command = audio_save)
+button_audio_save.grid(column=3, row=11, columnspan=1, sticky = "ew", pady = 5, padx = 5)
+
+button_audio_listen = tk.Button(text ="Listen to audio file", command = audio_listen)
+button_audio_listen.grid(column=4, row=11, columnspan=1, sticky = "ew", pady = 5, padx = 5)
 
 text_images = scrolledtext.ScrolledText(root, width=200, height=10, font=("Courier New", 7))
 text_images.grid(column=0, row=12, columnspan=9)
