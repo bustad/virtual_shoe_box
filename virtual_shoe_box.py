@@ -114,11 +114,11 @@ def findClosestAngle(p, t, sourcePositions):
         
     return mClosest
 
-def aabs(f, d):
+def aabs(f, d, h):
     T0 = 293.15 # K
     T = T0      # K
     
-    h = 0.60
+    #h = 0.60
     
     Fro = 24 + 4.04e4*h*(0.02+h)/(0.391+h)
     Frn = pow(T/T0, -1/2) * (
@@ -136,10 +136,10 @@ def aabs(f, d):
     
     return -alpha * d / 100  # dB
 
-def airabsir(d, sz, fs):
+def airabsir(d, sz, fs, h):
     airabsfr = np.zeros(sz)
     for k in range(int(sz/2)+1):
-        airabsfr[k] = pow(10, aabs(k/sz*fs, d) / 20.0)
+        airabsfr[k] = pow(10, aabs(k/sz*fs, d, h) / 20.0)
     for k in range(int(sz/2)-1):
         airabsfr[sz-1-k] = airabsfr[k+1]
     airabsir = np.real(ifft(airabsfr))
@@ -214,39 +214,147 @@ def calc_IR(images, dmax, d0, v_sound, airabson):
         hrtf1 = hrtf[1]
         
         if airabson:
-            air = airabsir(img[6], 256, 48000)
+            air = airabsir(img[6], 256, 48000, float(spinbox_air_h.get()))
             hrtf0 = scipy.signal.fftconvolve(hrtf0, air)
             hrtf1 = scipy.signal.fftconvolve(hrtf1, air)
         
         for k in range(img[9]):
             # lWallRefl
-            hrtf0 = reflexfilter(hrtf0, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
-            hrtf1 = reflexfilter(hrtf1, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            # hrtf0 = reflexfilter(hrtf0, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            # hrtf1 = reflexfilter(hrtf1, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            hrtf0 = reflexfilter(
+                hrtf0, 
+                float(spinbox_walls_g[0].get()), 
+                float(spinbox_walls_hf[0].get()), 
+                float(spinbox_walls_hg[0].get()), 
+                float(spinbox_walls_hQ[0].get()), 
+                float(spinbox_walls_lf[0].get()), 
+                float(spinbox_walls_lg[0].get()), 
+                float(spinbox_walls_lQ[0].get()))
+            hrtf1 = reflexfilter(
+                hrtf1, 
+                float(spinbox_walls_g[0].get()), 
+                float(spinbox_walls_hf[0].get()), 
+                float(spinbox_walls_hg[0].get()), 
+                float(spinbox_walls_hQ[0].get()), 
+                float(spinbox_walls_lf[0].get()), 
+                float(spinbox_walls_lg[0].get()), 
+                float(spinbox_walls_lQ[0].get()))
             
         for k in range(img[10]):
             # rWallRefl
-            hrtf0 = reflexfilter(hrtf0, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
-            hrtf1 = reflexfilter(hrtf1, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            # hrtf0 = reflexfilter(hrtf0, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            # hrtf1 = reflexfilter(hrtf1, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            hrtf0 = reflexfilter(
+                hrtf0, 
+                float(spinbox_walls_g[1].get()), 
+                float(spinbox_walls_hf[1].get()), 
+                float(spinbox_walls_hg[1].get()), 
+                float(spinbox_walls_hQ[1].get()), 
+                float(spinbox_walls_lf[1].get()), 
+                float(spinbox_walls_lg[1].get()), 
+                float(spinbox_walls_lQ[1].get()))
+            hrtf1 = reflexfilter(
+                hrtf1, 
+                float(spinbox_walls_g[1].get()), 
+                float(spinbox_walls_hf[1].get()), 
+                float(spinbox_walls_hg[1].get()), 
+                float(spinbox_walls_hQ[1].get()), 
+                float(spinbox_walls_lf[1].get()), 
+                float(spinbox_walls_lg[1].get()), 
+                float(spinbox_walls_lQ[1].get()))
             
         for k in range(img[11]):
             # fWallRefl
-            hrtf0 = reflexfilter(hrtf0, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
-            hrtf1 = reflexfilter(hrtf1, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            # hrtf0 = reflexfilter(hrtf0, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            # hrtf1 = reflexfilter(hrtf1, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            hrtf0 = reflexfilter(
+                hrtf0, 
+                float(spinbox_walls_g[2].get()), 
+                float(spinbox_walls_hf[2].get()), 
+                float(spinbox_walls_hg[2].get()), 
+                float(spinbox_walls_hQ[2].get()), 
+                float(spinbox_walls_lf[2].get()), 
+                float(spinbox_walls_lg[2].get()), 
+                float(spinbox_walls_lQ[2].get()))
+            hrtf1 = reflexfilter(
+                hrtf1, 
+                float(spinbox_walls_g[2].get()), 
+                float(spinbox_walls_hf[2].get()), 
+                float(spinbox_walls_hg[2].get()), 
+                float(spinbox_walls_hQ[2].get()), 
+                float(spinbox_walls_lf[2].get()), 
+                float(spinbox_walls_lg[2].get()), 
+                float(spinbox_walls_lQ[2].get()))
             
         for k in range(img[12]):
             # bWallRefl
-            hrtf0 = reflexfilter(hrtf0, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
-            hrtf1 = reflexfilter(hrtf1, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            # hrtf0 = reflexfilter(hrtf0, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            # hrtf1 = reflexfilter(hrtf1, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            hrtf0 = reflexfilter(
+                hrtf0, 
+                float(spinbox_walls_g[3].get()), 
+                float(spinbox_walls_hf[3].get()), 
+                float(spinbox_walls_hg[3].get()), 
+                float(spinbox_walls_hQ[3].get()), 
+                float(spinbox_walls_lf[3].get()), 
+                float(spinbox_walls_lg[3].get()), 
+                float(spinbox_walls_lQ[3].get()))
+            hrtf1 = reflexfilter(
+                hrtf1, 
+                float(spinbox_walls_g[3].get()), 
+                float(spinbox_walls_hf[3].get()), 
+                float(spinbox_walls_hg[3].get()), 
+                float(spinbox_walls_hQ[3].get()), 
+                float(spinbox_walls_lf[3].get()), 
+                float(spinbox_walls_lg[3].get()), 
+                float(spinbox_walls_lQ[3].get()))
             
         for k in range(img[13]):
             # cWallRefl
-            hrtf0 = reflexfilter(hrtf0, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
-            hrtf1 = reflexfilter(hrtf1, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            # hrtf0 = reflexfilter(hrtf0, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            # hrtf1 = reflexfilter(hrtf1, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            hrtf0 = reflexfilter(
+                hrtf0, 
+                float(spinbox_walls_g[4].get()), 
+                float(spinbox_walls_hf[4].get()), 
+                float(spinbox_walls_hg[4].get()), 
+                float(spinbox_walls_hQ[4].get()), 
+                float(spinbox_walls_lf[4].get()), 
+                float(spinbox_walls_lg[4].get()), 
+                float(spinbox_walls_lQ[4].get()))
+            hrtf1 = reflexfilter(
+                hrtf1, 
+                float(spinbox_walls_g[4].get()), 
+                float(spinbox_walls_hf[4].get()), 
+                float(spinbox_walls_hg[4].get()), 
+                float(spinbox_walls_hQ[4].get()), 
+                float(spinbox_walls_lf[4].get()), 
+                float(spinbox_walls_lg[4].get()), 
+                float(spinbox_walls_lQ[4].get()))
             
         for k in range(img[14]):
             # oWallRefl
-            hrtf0 = reflexfilter(hrtf0, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
-            hrtf1 = reflexfilter(hrtf1, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            # hrtf0 = reflexfilter(hrtf0, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            # hrtf1 = reflexfilter(hrtf1, 1.0, 7000, -5, 0.5, 100, -5, 0.5)
+            hrtf0 = reflexfilter(
+                hrtf0, 
+                float(spinbox_walls_g[5].get()), 
+                float(spinbox_walls_hf[5].get()), 
+                float(spinbox_walls_hg[5].get()), 
+                float(spinbox_walls_hQ[5].get()), 
+                float(spinbox_walls_lf[5].get()), 
+                float(spinbox_walls_lg[5].get()), 
+                float(spinbox_walls_lQ[5].get()))
+            hrtf1 = reflexfilter(
+                hrtf1, 
+                float(spinbox_walls_g[5].get()), 
+                float(spinbox_walls_hf[5].get()), 
+                float(spinbox_walls_hg[5].get()), 
+                float(spinbox_walls_hQ[5].get()), 
+                float(spinbox_walls_lf[5].get()), 
+                float(spinbox_walls_lg[5].get()), 
+                float(spinbox_walls_lQ[5].get()))
         
         ir_left[delay:(delay+hrtf0.shape[0])]  = ir_left[delay:(delay+hrtf0.shape[0])]  + hrtf0 * amp
         ir_right[delay:(delay+hrtf1.shape[0])] = ir_right[delay:(delay+hrtf1.shape[0])] + hrtf1 * amp
@@ -704,11 +812,15 @@ def audio_load():
         audio_data, samplerate = sf.read(filename)
         if audio_data.shape[1] > 1:
             audio_data = audio_data[:,1]
+        button_audio_listen["text"] = "Listen to " + filename
 
 def audio_listen():
     binaural_left = scipy.signal.fftconvolve(audio_data, ir_left)
     binaural_right = scipy.signal.fftconvolve(audio_data, ir_right)
     binaural = np.asarray([binaural_left, binaural_right]).swapaxes(-1,0)
+
+    if binaural.max() > 1.0:
+        binaural = binaural / binaural.max()
 
     sd.play(binaural, fs)
 
@@ -724,7 +836,7 @@ button_audio_load.grid(column=4, row=11, columnspan=2, sticky = "ew", pady = 5, 
 button_audio_listen = tk.Button(text ="Listen to ...", command = audio_listen)
 button_audio_listen.grid(column=6, row=11, columnspan=3, sticky = "ew", pady = 5, padx = 5)
 
-text_images = scrolledtext.ScrolledText(root, width=145, height=10, font=("Courier New", 8))
+text_images = scrolledtext.ScrolledText(root, width=200, height=10, font=("Courier New", 7))
 text_images.grid(column=0, row=12, columnspan=9)
 
 pb = ttk.Progressbar(root, orient = HORIZONTAL, mode = 'determinate', length = 1025)
