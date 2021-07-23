@@ -386,7 +386,58 @@ def plotIRandEQ():
     ax1.grid()
     
     ax2.clear()
-    #ax2.plot(ir_right)
+    for k in range(6):
+        # float(spinbox_walls_g[4].get()) 
+        # float(spinbox_walls_hg[4].get()) 
+        # float(spinbox_walls_lg[4].get()) 
+        # float(spinbox_walls_lf[4].get()) 
+        # float(spinbox_walls_hf[4].get()) 
+        # float(spinbox_walls_lQ[4].get())
+        # float(spinbox_walls_hQ[4].get()) 
+        
+        gain = float(spinbox_walls_g[k].get())
+        gainl = float(spinbox_walls_lg[k].get())
+        gainh = float(spinbox_walls_hg[k].get())
+        f0l = float(spinbox_walls_lf[k].get())
+        f0h = float(spinbox_walls_hf[k].get())
+        Ql = float(spinbox_walls_lQ[k].get())
+        Qh = float(spinbox_walls_hQ[4].get())
+
+        Al = pow(10, gainl/40)
+        Ah = pow(10, gainh/40)
+        w0l = 2*cmath.pi*f0l/fs
+        w0h = 2*cmath.pi*f0h/fs
+        alphal = cmath.sin(w0l) / (2*Ql)
+        alphah = cmath.sin(w0h) / (2*Qh)
+
+        # Low shelf
+
+        b0l = Al*((Al+1)-(Al-1)*cmath.cos(w0l)+2*cmath.sqrt(Al)*alphal)
+        b1l = 2*Al*((Al-1)-(Al+1)*cmath.cos(w0l))
+        b2l = Al*((Al+1)-(Al-1)*cmath.cos(w0l)-2*cmath.sqrt(Al)*alphal)
+
+        a0l = (Al+1)+(Al-1)*cmath.cos(w0l)+2*cmath.sqrt(Al)*alphal
+        a1l = -2*( (Al-1)+(Al+1)*cmath.cos(w0l) )
+        a2l = (Al+1)+(Al-1)*cmath.cos(w0l)-2*cmath.sqrt(Al)*alphal
+
+        # High shelf
+
+        b0h = Ah*( (Ah+1)+(Ah-1)*cmath.cos(w0h)+2*cmath.sqrt(Ah)*alphah )
+        b1h = -2*Ah*( (Ah-1)+(Ah+1)*cmath.cos(w0h) )
+        b2h = Ah*( (Ah+1)+(Ah-1)*cmath.cos(w0h)-2*cmath.sqrt(Ah)*alphah )
+
+        a0h = (Ah+1)-(Ah-1)*cmath.cos(w0h)+2*cmath.sqrt(Ah)*alphah
+        a1h = 2*((Ah-1)-(Ah+1)*cmath.cos(w0h))
+        a2h = (Ah+1)-(Ah-1)*cmath.cos(w0h)-2*cmath.sqrt(Ah)*alphah
+
+        f = np.linspace(20, 24000, 5000)
+        z = np.exp(1j*2*cmath.pi*f/fs)
+        Hwl = ( b0l + b1l*z**(-1) + b2l*z**(-2) ) / ( a0l + a1l*z**(-1) + a2l*z**(-2) )
+        Hwh = ( b0h + b1h*z**(-1) + b2h*z**(-2) ) / ( a0h + a1h*z**(-1) + a2h*z**(-2) )
+
+        ax2.plot(f, 20*np.log10(gain * np.multiply(Hwl, Hwh)))
+        ax2.set_xscale('log')
+        ax2.grid()
 
     canvas.draw()
 
@@ -558,7 +609,7 @@ spinbox_walls_lg_current_value = []
 spinbox_walls_lg = []
 for k in range(6):
     spinbox_walls_lg_current_value.append(tk.StringVar(value=0))
-    spinbox_walls_lg_current_value[k].set("0.0")
+    spinbox_walls_lg_current_value[k].set("-1.0")
     spinbox_walls_lg.append(ttk.Spinbox(
         root,
         from_=-20,
@@ -621,7 +672,7 @@ spinbox_walls_hg_current_value = []
 spinbox_walls_hg = []
 for k in range(6):
     spinbox_walls_hg_current_value.append(tk.StringVar(value=0))
-    spinbox_walls_hg_current_value[k].set("0.0")
+    spinbox_walls_hg_current_value[k].set("-1.0")
     spinbox_walls_hg.append(ttk.Spinbox(
         root,
         from_=-20,
