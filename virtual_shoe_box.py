@@ -923,5 +923,8 @@ plotIRandEQ()
 # Audio data
 audio_data = np.zeros(0)
 
+# Place window centered
+root.eval('tk::PlaceWindow . center')
+
 # Main loop
 root.mainloop()
