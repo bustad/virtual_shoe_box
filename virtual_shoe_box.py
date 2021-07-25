@@ -860,13 +860,6 @@ def IR_save():
         sf.write(filename, irlr, int(fs))
 
 def audio_save():
-    binaural_left = scipy.signal.fftconvolve(audio_data, ir_left)
-    binaural_right = scipy.signal.fftconvolve(audio_data, ir_right)
-    binaural = np.asarray([binaural_left, binaural_right]).swapaxes(-1,0)
-
-    if binaural.max() > 1.0:
-        binaural = binaural / binaural.max()
-
     filetypes = (
         ('Wav files', '*.wav'),
         ('All files', '*.*')
@@ -876,6 +869,12 @@ def audio_save():
         #initialdir='/',
         filetypes=filetypes)
     if filename != "":
+        binaural_left = scipy.signal.fftconvolve(audio_data, ir_left)
+        binaural_right = scipy.signal.fftconvolve(audio_data, ir_right)
+        binaural = np.asarray([binaural_left, binaural_right]).swapaxes(-1,0)
+
+        if binaural.max() > 1.0:
+            binaural = binaural / binaural.max()
         sf.write(filename, binaural, int(fs))
 
 def audio_load():
@@ -1036,7 +1035,7 @@ ir_right[0] = 1
 plotIRandEQ()
 
 # Audio data
-audio_data = np.zeros(0)
+audio_data = np.zeros(10)
 
 # Place window centered
 root.eval('tk::PlaceWindow . center')
