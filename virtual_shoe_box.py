@@ -854,9 +854,10 @@ def IR_save():
     )
     filename = filedialog.asksaveasfilename(
         title='Save IR',
-        initialdir='/',
+        #initialdir='/',
         filetypes=filetypes)
-    sf.write(filename, irlr, int(fs))
+    if filename != "":
+        sf.write(filename, irlr, int(fs))
 
 def audio_save():
     binaural_left = scipy.signal.fftconvolve(audio_data, ir_left)
@@ -872,9 +873,10 @@ def audio_save():
     )
     filename = filedialog.asksaveasfilename(
         title='Save audio file',
-        initialdir='/',
+        #initialdir='/',
         filetypes=filetypes)
-    sf.write(filename, binaural, int(fs))
+    if filename != "":
+        sf.write(filename, binaural, int(fs))
 
 def audio_load():
     global audio_data
@@ -885,7 +887,7 @@ def audio_load():
     )
     filename = filedialog.askopenfilename(
         title='Open a file',
-        initialdir='/',
+        #initialdir='/',
         filetypes=filetypes)
     if filename != "":
         audio_data, samplerate = sf.read(filename)
@@ -904,10 +906,83 @@ def audio_listen():
     sd.play(binaural, fs)
 
 def preset_save():
-    pass
+    filetypes = (
+        ('Presets', '*.preset'),
+        ('All files', '*.*')
+    )
+    filename = filedialog.asksaveasfilename(
+        title='Save preset',
+        #initialdir='/',
+        filetypes=filetypes)
+    if filename != "":
+        config = configparser.ConfigParser()
+        config['Source'] = {'Distance': spinbox_src_d0.get(),
+            'Azimuth': spinbox_src_phi0.get(),
+            'Elevation': spinbox_src_theta0.get()}
+
+        config['Walls'] = {}
+        Walls = config['Walls']
+        for k in range(6):
+            Walls['Distance ' + str(k+1)] = spinbox_walls_d[k].get()
+        for k in range(6):
+            Walls['Gain ' + str(k+1)] = spinbox_walls_g[k].get()
+        for k in range(6):
+            Walls['Low shelf freq ' + str(k+1)] = spinbox_walls_lf[k].get()
+        for k in range(6):
+            Walls['Low shelf gain ' + str(k+1)] = spinbox_walls_lg[k].get()
+        for k in range(6):
+            Walls['Low shelf Q ' + str(k+1)] = spinbox_walls_lQ[k].get()
+        for k in range(6):
+            Walls['High shelf freq ' + str(k+1)] = spinbox_walls_hf[k].get()
+        for k in range(6):
+            Walls['High shelf gain ' + str(k+1)] = spinbox_walls_hg[k].get()
+        for k in range(6):
+            Walls['High shelf Q ' + str(k+1)] = spinbox_walls_hQ[k].get()
+
+        config['Air'] = {'Air abs': spinbox_air_abs.get(),
+            'Humidity': spinbox_air_h.get(),
+            'Velocity': spinbox_air_v.get()}
+        
+        config['IR'] = {'Max order': spinbox_IR_o.get(),
+            'Max time': spinbox_IR_t.get()}
+
+        with open(filename, 'w') as configfile:
+            config.write(configfile)
 
 def preset_load():
-    pass
+    filetypes = (
+        ('Presets', '*.preset'),
+        ('All files', '*.*')
+    )
+    filename = filedialog.askopenfilename(
+        title='Load preset',
+        #initialdir='/',
+        filetypes=filetypes)
+    if filename != "":
+        config = configparser.ConfigParser()
+        config.read(filename)
+
+        spinbox_src_d0.set(config['Source']['Distance'])
+        spinbox_src_phi0.set(config['Source']['Azimuth'])
+        spinbox_src_theta0.set(config['Source']['Elevation'])
+
+        # 2 do!
+
+        # spinbox_walls_d[]
+        # spinbox_walls_g[]
+        # spinbox_walls_lf[]
+        # spinbox_walls_lg[]
+        # spinbox_walls_lQ[]
+        # spinbox_walls_hf[]
+        # spinbox_walls_hg[]
+        # spinbox_walls_hQ[]
+
+        # spinbox_air_abs
+        # spinbox_air_h
+        # spinbox_air_v
+
+        # spinbox_IR_o
+        # spinbox_IR_t
 
 button_IR_calc = tk.Button(text ="Calculate IR", command = IR_calc)
 button_IR_calc.grid(column=0, row=11, columnspan=1, sticky = "ew", pady = 5, padx = 5)
