@@ -966,23 +966,29 @@ def preset_load():
         spinbox_src_phi0.set(config['Source']['Azimuth'])
         spinbox_src_theta0.set(config['Source']['Elevation'])
 
-        # 2 do!
+        for k in range(6):
+            spinbox_walls_d[k].set(config['Walls']['Distance ' + str(k+1)])        
+        for k in range(6):
+            spinbox_walls_g[k].set(config['Walls']['Gain ' + str(k+1)])
+        for k in range(6):
+            spinbox_walls_lf[k].set(config['Walls']['Low shelf freq ' + str(k+1)])
+        for k in range(6):
+            spinbox_walls_lg[k].set(config['Walls']['Low shelf gain ' + str(k+1)])
+        for k in range(6):
+            spinbox_walls_lQ[k].set(config['Walls']['Low shelf Q ' + str(k+1)])
+        for k in range(6):
+            spinbox_walls_hf[k].set(config['Walls']['High shelf freq ' + str(k+1)])
+        for k in range(6):
+            spinbox_walls_hg[k].set(config['Walls']['High shelf gain ' + str(k+1)])
+        for k in range(6):
+            spinbox_walls_hQ[k].set(config['Walls']['High shelf Q ' + str(k+1)])
 
-        # spinbox_walls_d[]
-        # spinbox_walls_g[]
-        # spinbox_walls_lf[]
-        # spinbox_walls_lg[]
-        # spinbox_walls_lQ[]
-        # spinbox_walls_hf[]
-        # spinbox_walls_hg[]
-        # spinbox_walls_hQ[]
+        spinbox_air_abs.set(config['Air']['Air abs'])
+        spinbox_air_h.set(config['Air']['Humidity'])
+        spinbox_air_v.set(config['Air']['Velocity'])
 
-        # spinbox_air_abs
-        # spinbox_air_h
-        # spinbox_air_v
-
-        # spinbox_IR_o
-        # spinbox_IR_t
+        spinbox_IR_o.set(config['IR']['Max order'])
+        spinbox_IR_t.set(config['IR']['Max time'])
 
 button_IR_calc = tk.Button(text ="Calculate IR", command = IR_calc)
 button_IR_calc.grid(column=0, row=11, columnspan=1, sticky = "ew", pady = 5, padx = 5)
