@@ -16,6 +16,7 @@ from scipy import signal
 import numpy as np
 import soundfile as sf
 import sounddevice as sd
+import configparser
 
 # Calculate images
 
@@ -463,7 +464,7 @@ for k in range(14):
 
 # Source
 
-lbl_src = tk.Label(root, text = "Source", font=font_bold)
+lbl_src = tk.Label(root, text = "Source", font=font_bold, fg='blue')
 lbl_src.grid(column=0, row=0, sticky = "nw", pady = 5, padx = 5)
 
 lbl_src_d0 = tk.Label(root, text = "Distance [m]", font=font_normal)
@@ -516,7 +517,7 @@ spinbox_src_theta0.grid(column=6, row=0, sticky = "new", pady = 5, padx = 5)
 
 # Walls
 
-lbl_walls = tk.Label(root, text = "Walls", font=font_bold)
+lbl_walls = tk.Label(root, text = "Walls", font=font_bold, fg='blue')
 lbl_walls.grid(column=0, row=1, sticky = "nw", pady = 5, padx = 5)
 
 lbl_walll = tk.Label(root, text = "Left", font=font_normal)
@@ -707,7 +708,7 @@ for k in range(6):
 
 # Air
 
-lbl_air = tk.Label(root, text = "Air", font=font_bold)
+lbl_air = tk.Label(root, text = "Air", font=font_bold, fg='blue')
 lbl_air.grid(column=0, row=8, sticky = "nw", pady = 5, padx = 5)
 
 lbl_air_abs = tk.Label(root, text = "Air absorption", font=font_normal)
@@ -758,7 +759,7 @@ spinbox_air_v.grid(column=6, row=8, sticky = "new", pady = 5, padx = 5)
 
 # IR
 
-lbl_IR = tk.Label(root, text = "IR", font=font_bold)
+lbl_IR = tk.Label(root, text = "IR", font=font_bold, fg='blue')
 lbl_IR.grid(column=0, row=9, sticky = "nw", pady = 5, padx = 5)
 
 lbl_IR_o = tk.Label(root, text = "Max order", font=font_normal)
@@ -902,6 +903,12 @@ def audio_listen():
 
     sd.play(binaural, fs)
 
+def preset_save():
+    pass
+
+def preset_load():
+    pass
+
 button_IR_calc = tk.Button(text ="Calculate IR", command = IR_calc)
 button_IR_calc.grid(column=0, row=11, columnspan=1, sticky = "ew", pady = 5, padx = 5)
 
@@ -909,13 +916,19 @@ button_IR_save = tk.Button(text ="Save IR", command = IR_save)
 button_IR_save.grid(column=1, row=11, columnspan=1, sticky = "ew", pady = 5, padx = 5)
 
 button_audio_load = tk.Button(text ="Load audio file", command = audio_load)
-button_audio_load.grid(column=2, row=11, columnspan=1, sticky = "ew", pady = 5, padx = 5)
+button_audio_load.grid(column=3, row=11, columnspan=1, sticky = "ew", pady = 5, padx = 5)
 
 button_audio_save = tk.Button(text ="Save audio file", command = audio_save)
-button_audio_save.grid(column=3, row=11, columnspan=1, sticky = "ew", pady = 5, padx = 5)
+button_audio_save.grid(column=4, row=11, columnspan=1, sticky = "ew", pady = 5, padx = 5)
 
 button_audio_listen = tk.Button(text ="Listen to audio file", command = audio_listen)
-button_audio_listen.grid(column=4, row=11, columnspan=1, sticky = "ew", pady = 5, padx = 5)
+button_audio_listen.grid(column=5, row=11, columnspan=1, sticky = "ew", pady = 5, padx = 5)
+
+button_preset_load = tk.Button(text ="Load preset", command = preset_load)
+button_preset_load.grid(column=7, row=11, columnspan=1, sticky = "ew", pady = 5, padx = 5)
+
+button_preset_save = tk.Button(text ="Save preset", command = preset_save)
+button_preset_save.grid(column=8, row=11, columnspan=1, sticky = "ew", pady = 5, padx = 5)
 
 text_images = scrolledtext.ScrolledText(root, width=200, height=10, font=("Courier New", 7))
 text_images.grid(column=0, row=12, columnspan=9)
